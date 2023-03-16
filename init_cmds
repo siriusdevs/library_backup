@@ -1,0 +1,10 @@
+docker run -d --name library_project_7_1 -p 5435:5432 
+-v $HOME/postgresql/library_7_1:/var/lib/postgresql/library_7_1 
+-e POSTGRES_PASSWORD=68993 
+-e POSTGRES_USER=app 
+-e POSTGRES_DB=library_db
+postgres
+
+psql -h 127.0.0.1 -p 5435 -U app library_db
+
+psql -h 127.0.0.1 -p 5435 -U app library_db -f init_db.ddl
