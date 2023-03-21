@@ -70,8 +70,14 @@ class BookAuthor(UUIDMixin, CreatedMixin):
         unique_together = (('book', 'author'),)
 
 
+genre_choices = (
+    ('fantasy', 'fantasy'),
+    ('fiction', 'fiction'),
+    ('detective', 'detective')
+)
+
 class Genre(UUIDMixin, CreatedMixin, ModifiedMixin):
-    name = models.TextField()
+    name = models.CharField(choices=genre_choices, max_length=30)
     description = models.TextField(blank=True, null=True)
     books = models.ManyToManyField(Book, through='BookGenre')
 

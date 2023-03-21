@@ -13,13 +13,19 @@ credentials = {
     'dbname' : getenv('PG_DBNAME')
 }
 
+genres = {
+    'fantasy': 'every student gets 5 on exam',
+    'fiction': 'a great song by Tom Odell',
+    'detective': 'find out how to run students homework'
+}
+    
 connection = connect(**credentials)
 cursor = connection.cursor()
-request = "INSERT INTO library.author (full_name) VALUES ('{0}')"
-fake = Faker()
-for _ in range(2000):
-    full_name: str = str(fake.name())
-    cursor.execute(request.format(full_name))
+request = "INSERT INTO library.genre (name, description) VALUES (%s, %s)" 
+# fake = Faker()
+for name, description in genres.items():
+    # full_name: str = str(fake.name())
+    cursor.execute(request, (name, description))
 
 connection.commit()
 cursor.close()
