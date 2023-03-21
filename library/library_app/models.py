@@ -1,11 +1,30 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from uuid import uuid4
 
 
-class Author(models.Model):
-    id = models.UUIDField(primary_key=True)
-    full_name = models.TextField()
+class UUIDMixin(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4) # функцию, а не результат
+
+    class Meta:
+        abstract = True
+
+class CreatedMixin(models.Model):
     created = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+class ModifiedMixin(models.Model):
     modified = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+
+class Author(UUIDMixin, CreatedMixin, ModifiedMixin):
+    full_name = models.TextField()
+    books = models.ManyToManyField('Book', through='BookAuthor')
 
     def __str__(self):
         return self.full_name
@@ -13,16 +32,27 @@ class Author(models.Model):
     class Meta:
         db_table = 'author'
 
+def validate_volume(volume: int):
+    if volume <= 0:
+        raise ValidationError(   # from django.core.exceptions
+            f'Volume {volume} is less or equal zero',
+            params={'volume': volume}
+        )
 
-class Book(models.Model):
-    id = models.UUIDField(primary_key=True)
-    title = models.TextField()
+# types of goods
+type_choices = (
+    ('book', 'book'),
+    ('magazine', 'magazine')
+)
+
+class Book(UUIDMixin, CreatedMixin, ModifiedMixin):
+    title = models.CharField(max_length=40)
     description = models.TextField(blank=True, null=True)
-    volume = models.IntegerField()
-    type = models.TextField(blank=True, null=True)
+    volume = models.IntegerField(validators=[validate_volume]) # calling validator for volume field
+    type = models.CharField(max_length=20, choices=type_choices, blank=True, null=True)
     year = models.IntegerField(blank=True, null=True)
-    created = models.DateTimeField(blank=True, null=True)
-    modified = models.DateTimeField(blank=True, null=True)
+    authors = models.ManyToManyField(Author, through='BookAuthor')
+    genres = models.ManyToManyField('Genre', through='BookGenre')
 
     def __str__(self):
         return f'{self.title}, {self.type} year {self.year}'
@@ -31,23 +61,19 @@ class Book(models.Model):
         db_table = 'book'
 
 
-class BookAuthor(models.Model):
-    id = models.UUIDField(primary_key=True)
+class BookAuthor(UUIDMixin, CreatedMixin):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, blank=True, null=True)
     author = models.ForeignKey(Author, on_delete=models.CASCADE, blank=True, null=True)
-    created = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         db_table = 'book_author'
         unique_together = (('book', 'author'),)
 
 
-class Genre(models.Model):
-    id = models.UUIDField(primary_key=True)
+class Genre(UUIDMixin, CreatedMixin, ModifiedMixin):
     name = models.TextField()
     description = models.TextField(blank=True, null=True)
-    created = models.DateTimeField(blank=True, null=True)
-    modified = models.DateTimeField(blank=True, null=True)
+    books = models.ManyToManyField(Book, through='BookGenre')
 
     def __str__(self):
         return self.name
@@ -56,11 +82,9 @@ class Genre(models.Model):
         db_table = 'genre'
 
 
-class BookGenre(models.Model):
-    id = models.UUIDField(primary_key=True)
+class BookGenre(UUIDMixin, CreatedMixin):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, blank=True, null=True)
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE, blank=True, null=True)
-    created = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         db_table = 'book_genre'
