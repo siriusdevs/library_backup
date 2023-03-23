@@ -1,30 +1,29 @@
 from django.contrib import admin
+from datetime import datetime
 from .models import Genre, Book, Author, BookAuthor, BookGenre, genre_choices
 
 
-# class DecadeBornListFilter(admin.SimpleListFilter): # TODO filter by genre
-#     title = 'Genre'
+class NewestBookListFilter(admin.SimpleListFilter):
 
-#     parameter_name = 'genre'
+    title = 'recency'
+    parameter_name = 'recency'
 
-#     def lookups(self, request, model_admin):
-#         genres = [item[0] for item in genre_choices]
-#         return [(genre, genre) for genre in genres]
+    def lookups(self, *_):
+        return (
+            ('10yo', 'Written in the last 10 years'),
+            ('20yo', 'Written in the last 20 years'),
+        )
 
-#     def queryset(self, request, queryset):
-#         if self.value() == '80s':
-#             return queryset.filter(
-#                 genre_=date(1980, 1, 1),
-#                 birthday__lte=date(1989, 12, 31),
-#             )
-#         if self.value() == '90s':
-#             return queryset.filter(
-#                 birthday__gte=date(1990, 1, 1),
-#                 birthday__lte=date(1999, 12, 31),
-#             )
-
-# class PersonAdmin(admin.ModelAdmin):
-#     list_filter = (DecadeBornListFilter,)
+    def queryset(self, request, queryset):
+        if self.value() == '10yo':
+            return queryset.filter(
+                year__gte = datetime.now().year - 10
+            )
+        elif self.value() == '20yo':
+            return queryset.filter(
+                year__gte = datetime.now().year - 20
+            )
+        return queryset
 
 class BookAuthor_inline(admin.TabularInline):
     model = BookAuthor
@@ -46,15 +45,17 @@ class GenreAdmin(admin.ModelAdmin):
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
     """Register Book Admin Model."""
-    
+
     model = Book
-    inlines = (BookAuthor_inline, BookGenre_inline) # adding inline to book admin model
+    inlines = (BookAuthor_inline, BookGenre_inline)
     list_filter = (
         'title',
         'year',
         'volume',
         'type',
-        'created'
+        'created',
+        'genres',
+        NewestBookListFilter
     )
 
 @admin.register(Author)
